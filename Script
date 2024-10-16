@@ -1,0 +1,54 @@
+def get_trello_board_cards(board_id, trello_api_key, trello_token):
+    url = f"https://api.trello.com/1/boards/{board_id}/cards"
+    query = {
+        "key": trello_api_key,
+        "token": trello_token
+    }
+    
+    response = requests.get(url, params=query)
+    
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print("Failed to get Trello cards. Status code:", response.status_code)
+        return []
+
+def summarize_with_chatgpt(text, openai_api_key):
+    url = "https://api.openai.com/v1/completions"
+    headers = {
+        "Authorization": f"Bearer {openai_api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "model": "text-davinci-003",
+        "prompt": f"Summarize the following Trello board content:\n\n{text}",
+        "max_tokens": 100,
+        "temperature": 0.5
+    }
+    
+    response = requests.post(url, headers=headers, json=data)
+    
+    if response.status_code == 200:
+        return response.json()["choices"][0]["text"].strip()
+    else:
+        print("Failed to get summary from ChatGPT. Status code:", response.status_code)
+        return "No summary available."
+
+if __name__ == "__main__":
+    # Set your OpenAI API key, Trello API key, and Trello token
+    openai_api_key = "your_openai_api_key_here"
+    trello_api_key = "your_trello_api_key_here"
+    trello_token = "your_trello_token_here"
+    
+    # Specify the Trello board ID
+    trello_board_id = "your_trello_board_id_here"
+    
+    # Get all cards from the Trello board
+    cards = get_trello_board_cards(trello_board_id, trello_api_key, trello_token)
+    
+    # Concatenate card names and descriptions for summarization
+    card_content = "\n".join([f"{card['name']}: {card['desc']}" for card in cards if card['desc']])
+    
+    # Get a summary using ChatGPT
+    summary = summarize_with_chatgpt(card_content, openai_api_key)
+    print("Trello Board Summary:\n", summary)
